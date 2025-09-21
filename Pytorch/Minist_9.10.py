@@ -16,7 +16,7 @@ train_loader = DataLoader(train_loader = DataLoader(
     ),
     batch_size=64,
     shuffle=True
-)
+))
 
       # 训练“练习题”加载器
 
