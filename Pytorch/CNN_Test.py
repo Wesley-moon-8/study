@@ -194,7 +194,7 @@ def plot_training_curves(train_losses, train_accs, test_losses, test_accs):
 
 # 6. 可视化错误预测样本
 def visualize_errors(model, test_loader, num_samples=6):
-    """可视化模型预测错误的样本"""
+    """可视化模型预测 错误样本"""
     model.eval()
     errors = []
     
