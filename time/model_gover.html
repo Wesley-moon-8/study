@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模型管理</title>
+  <!-- 依赖引入 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.full.min.js"></script>
+
+  <!-- 引入外部CSS -->
+  <link href="./workbench.css" rel="stylesheet">
+  
+  <style>
+      /* 仅保留模型管理页面特有的样式定义 */
+      /* 复用workbench.css中的全局样式和侧边栏样式 */
+      .model-container {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      .model-header {
+        margin-bottom: 24px;
+      }
+      .model-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1d2129;
+      }
+
+    /* 模型选择区域样式 */
+    .model-selection {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .model-selection-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #1d2129;
+      margin-bottom: 16px;
+    }
+    .model-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
+      margin-bottom: 24px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .model-card {
+      border: 2px solid #eee;
+      border-radius: 8px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .model-card:hover {
+      border-color: #165dff;
+      box-shadow: 0 4px 12px rgba(22, 93, 255, 0.1);
+    }
+    .model-card.selected {
+      border-color: #165dff;
+      background-color: #f0f7ff;
+    }
+    .model-card.selected::before {
+      content: "✓";
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 24px;
+      height: 24px;
+      background-color: #165dff;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .model-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1d2129;
+      margin-bottom: 8px;
+    }
+    .model-description {
+      font-size: 14px;
+      color: #4e5969;
+      line-height: 1.6;
+    }
+    .model-features {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+    }
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+    .feature-item i {
+      color: #165dff;
+      margin-right: 8px;
+      margin-top: 3px;
+    }
+    
+    /* 模型详情样式 */
+    .model-details {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .model-details p {
+      margin: 8px 0;
+      color: #4e5969;
+    }
+    
+    /* 操作提示样式 */
+    .operation-tip {
+      margin-top: 30px;
+      padding: 0 20px;
+    }
+    .tip-box {
+      background-color: #ecf5ff;
+      border: 1px solid #d9ecff;
+      border-radius: 6px;
+      padding: 16px;
+      display: flex;
+      align-items: flex-start;
+      color: #409eff;
+    }
+    .tip-box i {
+      margin-right: 12px;
+      margin-top: 2px;
+    }
+    .tip-box a {
+      color: #409eff;
+      text-decoration: underline;
+    }
+    .tip-box a:hover {
+      color: #66b1ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边栏 - 使用workbench.css中定义的样式 -->
+    <aside class="sidebar">
+      <!-- 用户信息区域 -->
+      <div class="sidebar-user" onclick="goToProfile()">
+        <div class="user-avatar">
+          <img id="avatar" src="https://picsum.photos/id/1005/200/200" alt="用户头像">
+        </div>
+        <div class="user-name">张三</div>
+        <div class="user-role">普通用户</div>
+      </div>
+      
+      <!-- 菜单列表 -->
+      <div class="sidebar-menu">
+        <div class="menu-item" onclick="switchMenu('workbench')">
+          <i class="fa fa-tachometer menu-icon"></i>
+          <span>工作台</span>
+        </div>
+        <div class="menu-item" onclick="switchMenu('data')">
+          <i class="fa fa-database menu-icon"></i>
+          <span>数据管理</span>
+        </div>
+        <div class="menu-item active" onclick="switchMenu('model')">
+          <i class="fa fa-cogs menu-icon"></i>
+          <span>模型管理</span>
+        </div>
+        <div class="menu-item" onclick="switchMenu('profile')">
+          <i class="fa fa-user menu-icon"></i>
+          <span>个人信息</span>
+        </div>
+        <div class="menu-item" onclick="handleLogout()">
+          <i class="fa fa-sign-out menu-icon"></i>
+          <span>退出登录</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <div class="top-bar">
+        <button class="hamburger-btn" onclick="toggleSidebar()">
+          <i class="fa fa-bars"></i>
+        </button>
+        <div class="user-info-small" onclick="goToProfile">
+          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="头像">
+        </div>
+      </div>
+
+      <div class="model-container">
+        <div class="model-header">
+          <div class="model-title">
+            <i class="fa fa-cogs mr-2"></i>模型管理
+          </div>
+        </div>
+
+        <!-- 模型选择区域 -->
+        <div class="model-selection">
+          <div class="model-selection-title">选择模型</div>
+          <div class="model-cards">
+            <!-- PatchTST模型卡片 -->
+            <div class="model-card">
+              <div class="model-name">PatchTST</div>
+              <div class="model-description">基于Patch Transformer的时序预测模型，通过将时间序列分割成Patch进行高效处理</div>
+              <div class="model-features">
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>支持长序列输入和预测</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>通过Patch注意力机制高效捕获时序依赖</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>具有良好的泛化能力</span>
+                </div>
+              </div>
+              <div class="model-details">
+                <p><strong>优势：</strong>高效处理长序列数据，训练速度快</p>
+                <p><strong>适用场景：</strong>多变量长序列预测，大规模时序数据分析</p>
+                <p><strong>参数推荐：</strong>学习率 0.0001，Patch大小 16，头数 4</p>
+              </div>
+            </div>
+            
+            <!-- AutoFormer模型卡片 -->
+            <div class="model-card">
+              <div class="model-name">AutoFormer</div>
+              <div class="model-description">自动化注意力机制的Transformer模型，专为时序预测优化</div>
+              <div class="model-features">
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>自适应捕获多尺度时序特征</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>计算效率高于传统Transformer</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>支持多变量预测任务</span>
+                </div>
+              </div>
+              <div class="model-details">
+                <p><strong>优势：</strong>高效计算，适合实时预测场景</p>
+                <p><strong>适用场景：</strong>多变量预测，实时监控和预测</p>
+                <p><strong>参数推荐：</strong>学习率 0.0001，注意力头数 4，编码器层数 3</p>
+              </div>
+            </div>
+            
+            <!-- LSTM模型卡片 -->
+            <div class="model-card">
+              <div class="model-name">LSTM</div>
+              <div class="model-description">长短期记忆网络，经典的循环神经网络变体，擅长捕获时序数据的长期依赖</div>
+              <div class="model-features">
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>有效处理时序数据的长期依赖关系</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>计算复杂度相对较低</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>支持双向LSTM捕获前后向信息</span>
+                </div>
+              </div>
+              <div class="model-details">
+                <p><strong>优势：</strong>模型简单，训练稳定，适合中等长度序列</p>
+                <p><strong>适用场景：</strong>中等长度时序预测，序列分类任务</p>
+                <p><strong>参数推荐：</strong>学习率 0.001，隐藏层大小 128，层数 2</p>
+              </div>
+            </div>
+            
+            <!-- TFT模型卡片 -->
+            <div class="model-card">
+              <div class="model-name">Temporal Fusion Transformer</div>
+              <div class="model-description">专为时序预测设计的融合Transformer模型，支持静态和动态特征</div>
+              <div class="model-features">
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>支持静态特征和动态特征的融合</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>具有良好的可解释性</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fa fa-check-circle"></i>
+                  <span>内置变量选择网络优化特征使用</span>
+                </div>
+              </div>
+              <div class="model-details">
+                <p><strong>优势：</strong>支持静态和动态特征，具有良好的可解释性</p>
+                <p><strong>适用场景：</strong>多变量预测，需要解释预测结果的业务场景</p>
+                <p><strong>参数推荐：</strong>学习率 0.0001，注意力头数 4，隐藏层大小 256</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作提示 -->
+        <div class="operation-tip">
+          <div class="tip-box">
+            <i class="fa fa-info-circle text-blue-500 mr-2"></i>
+            <p>在<strong><a href="new_project.html">新建项目</a></strong>时，您可以上传数据并选择合适的模型，系统会根据选择的模型自动推荐最优参数配置。</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 侧边栏交互功能
+    function toggleSidebar() {
+      document.querySelector('.sidebar').classList.toggle('show');
+    }
+
+    function switchMenu(menuName) {
+      // 更新菜单项激活状态
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.target.closest('.menu-item')?.classList.add('active');
+      
+      // 页面跳转
+      const urls = {
+        workbench: 'workbench.html',
+        data: 'data_gover.html',
+        model: 'model_gover.html',
+        profile: 'profile.html'
+      };
+      if (urls[menuName]) {
+        window.location.href = urls[menuName];
+      }
+    }
+
+    function goToProfile() {
+      window.location.href = 'profile.html';
+    }
+
+    function handleLogout() {
+      confirm('确定要退出登录吗？') && alert('已退出登录');
+    }
+  </script>
+</body>
+</html>

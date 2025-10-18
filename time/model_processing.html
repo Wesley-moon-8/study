@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模型计算中 - 模型管理</title>
+  <!-- 依赖引入 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+  <!-- 引入外部CSS -->
+  <link href="./workbench.css" rel="stylesheet">
+  
+  <style>
+      /* 页面特有样式 */
+      .processing-container {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      
+      .processing-header {
+        margin-bottom: 32px;
+      }
+      
+      .processing-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1d2129;
+        margin-bottom: 12px;
+      }
+      
+      .project-info {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+      
+      .info-item {
+        display: flex;
+        align-items: center;
+      }
+      
+      .info-label {
+        color: #666;
+        margin-right: 8px;
+        font-size: 14px;
+      }
+      
+      .info-value {
+        font-weight: 500;
+        color: #333;
+      }
+      
+      .processing-content {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      }
+      
+      .progress-section {
+        margin-bottom: 32px;
+      }
+      
+      .section-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #1d2129;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+      }
+      
+      .section-title i {
+        margin-right: 8px;
+        color: #165dff;
+      }
+      
+      .progress-bar-container {
+        background-color: #f5f7fa;
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      
+      .progress-percentage {
+        color: #165dff;
+        font-weight: 500;
+      }
+      
+      .processing-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+      }
+      
+      .detail-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px;
+      }
+      
+      .detail-card-title {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 12px;
+      }
+      
+      .detail-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1d2129;
+      }
+      
+      .logs-section {
+        background-color: #1f2937;
+        border-radius: 8px;
+        padding: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      
+      .logs-title {
+        color: #fff;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+      
+      .log-item {
+        color: #e5e7eb;
+        font-size: 13px;
+        margin-bottom: 8px;
+        line-height: 1.6;
+      }
+      
+      .log-time {
+        color: #9ca3af;
+        margin-right: 12px;
+      }
+      
+      .log-success {
+        color: #10b981;
+      }
+      
+      .log-info {
+        color: #3b82f6;
+      }
+      
+      .log-warning {
+        color: #f59e0b;
+      }
+      
+      .action-buttons {
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+      
+      .spinner {
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .processing-details {
+          grid-template-columns: 1fr;
+        }
+        
+        .project-info {
+          flex-direction: column;
+          gap: 12px;
+        }
+      }
+  </style>
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- 侧边栏 - 使用workbench.css中定义的样式 -->
+    <aside class="sidebar">
+      <!-- 用户信息区域 -->
+      <div class="sidebar-user" onclick="goToProfile()">
+        <div class="user-avatar">
+          <img id="avatar" src="https://picsum.photos/id/1005/200/200" alt="用户头像">
+        </div>
+        <div class="user-name">张三</div>
+        <div class="user-role">普通用户</div>
+      </div>
+      
+      <!-- 菜单列表 -->
+      <div class="sidebar-menu">
+        <div class="menu-item" onclick="switchMenu('workbench')">
+          <i class="fa fa-tachometer menu-icon"></i>
+          <span>工作台</span>
+        </div>
+        <div class="menu-item" onclick="switchMenu('data')">
+          <i class="fa fa-database menu-icon"></i>
+          <span>数据管理</span>
+        </div>
+        <div class="menu-item active" onclick="switchMenu('model')">
+          <i class="fa fa-cogs menu-icon"></i>
+          <span>模型管理</span>
+        </div>
+        <div class="menu-item" onclick="switchMenu('profile')">
+          <i class="fa fa-user menu-icon"></i>
+          <span>个人信息</span>
+        </div>
+        <div class="menu-item" onclick="handleLogout()">
+          <i class="fa fa-sign-out menu-icon"></i>
+          <span>退出登录</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <div class="top-bar">
+        <button class="hamburger-btn" onclick="toggleSidebar()">
+          <i class="fa fa-bars"></i>
+        </button>
+        <div class="user-info-small" onclick="goToProfile">
+          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="头像">
+        </div>
+      </div>
+
+      <div class="processing-container">
+        <div class="processing-header">
+          <div class="processing-title">
+            <i class="fa fa-calculator mr-2"></i>模型计算中
+          </div>
+          <p class="text-gray-500">模型正在训练和预测，请耐心等待...</p>
+        </div>
+
+        <!-- 项目信息 -->
+        <div class="project-info">
+          <div class="info-item">
+            <span class="info-label">项目名称:</span>
+            <span class="info-value">{{ projectInfo.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">使用模型:</span>
+            <span class="info-value">{{ projectInfo.model }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">开始时间:</span>
+            <span class="info-value">{{ projectInfo.startTime }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">预计剩余:</span>
+            <span class="info-value text-blue-500">{{ estimatedTime }}</span>
+          </div>
+        </div>
+
+        <!-- 计算内容区域 -->
+        <div class="processing-content">
+          <!-- 进度条区域 -->
+          <div class="progress-section">
+            <h3 class="section-title">
+              <i class="fa fa-tasks"></i>计算进度
+            </h3>
+            <div class="progress-bar-container">
+              <div class="progress-label">
+                <span>整体进度</span>
+                <span class="progress-percentage">{{ progress }}%</span>
+              </div>
+              <el-progress :percentage="progress" :status="progressStatus" />
+            </div>
+          </div>
+
+          <!-- 计算详情 -->
+          <div class="processing-details">
+            <div class="detail-card">
+              <div class="detail-card-title">当前阶段</div>
+              <div class="detail-value">{{ currentStage }}</div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-card-title">训练轮次</div>
+              <div class="detail-value">{{ currentEpoch }} / {{ totalEpochs }}</div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-card-title">当前损失值</div>
+              <div class="detail-value">{{ currentLoss }}</div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-card-title">最佳准确率</div>
+              <div class="detail-value">{{ bestAccuracy }}%</div>
+            </div>
+          </div>
+
+          <!-- 训练过程可视化 -->
+          <div class="progress-section">
+            <h3 class="section-title">
+              <i class="fa fa-line-chart"></i>训练动态
+            </h3>
+            <div id="trainingChart" style="width: 100%; height: 300px;"></div>
+          </div>
+
+          <!-- 日志信息 -->
+          <div class="progress-section">
+            <h3 class="section-title">
+              <i class="fa fa-file-text-o"></i>计算日志
+            </h3>
+            <div class="logs-section">
+              <div class="log-item" v-for="(log, index) in logs" :key="index">
+                <span class="log-time">{{ log.time }}</span>
+                <span :class="'log-' + log.type">{{ log.content }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="action-buttons">
+            <el-button type="danger" @click="handleCancel">
+              <i class="fa fa-stop"></i> 取消计算
+            </el-button>
+            <el-button type="info" :loading="!canNavigate" @click="navigateToResults">
+              <i v-if="canNavigate" class="fa fa-eye"></i>
+              <i v-else class="fa fa-spinner spinner"></i>
+              {{ canNavigate ? '查看结果' : '计算中...' }}
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Vue应用实例
+    const { createApp, ref, onMounted, computed } = Vue;
+    
+    const app = createApp({
+      setup() {
+        // 项目信息
+        const projectInfo = ref({
+          name: '销售预测项目',
+          model: 'PatchTST',
+          startTime: '2024-01-15 14:30:25'
+        });
+        
+        // 计算进度
+        const progress = ref(0);
+        const progressStatus = ref('active');
+        const currentStage = ref('数据预处理');
+        const currentEpoch = ref(0);
+        const totalEpochs = ref(100);
+        const currentLoss = ref('0.0000');
+        const bestAccuracy = ref('0.00');
+        const estimatedTime = ref('约 15 分钟');
+        const canNavigate = ref(false);
+        
+        // 日志数据
+        const logs = ref([
+          { time: '14:30:25', type: 'info', content: '开始模型计算' },
+          { time: '14:30:26', type: 'info', content: '加载数据集成功' },
+          { time: '14:30:28', type: 'info', content: '开始数据预处理' }
+        ]);
+        
+        // 模拟计算过程
+        const simulateProcessing = () => {
+          const stages = [
+            { name: '数据预处理', duration: 3, progress: 20 },
+            { name: '模型初始化', duration: 2, progress: 30 },
+            { name: '训练阶段', duration: 8, progress: 90 },
+            { name: '结果生成', duration: 2, progress: 100 }
+          ];
+          
+          let stageIndex = 0;
+          let logIndex = 0;
+          
+          // 初始日志
+          addLog('14:30:30', 'success', '数据预处理完成');
+          
+          const stageInterval = setInterval(() => {
+            if (stageIndex < stages.length) {
+              const stage = stages[stageIndex];
+              currentStage.value = stage.name;
+              progress.value = stage.progress;
+              
+              if (stage.name === '训练阶段') {
+                // 模拟训练过程
+                simulateTraining();
+              } else if (stage.name === '结果生成') {
+                addLog(getCurrentTime(), 'info', '正在生成预测结果...');
+              } else {
+                addLog(getCurrentTime(), 'info', `${stage.name}进行中...`);
+              }
+              
+              stageIndex++;
+              
+              if (stageIndex === stages.length) {
+                clearInterval(stageInterval);
+                completeProcessing();
+              }
+            }
+          }, stages[stageIndex]?.duration * 1000 || 1000);
+        };
+        
+        // 模拟训练过程
+        const simulateTraining = () => {
+          let epoch = 1;
+          currentEpoch.value = epoch;
+          
+          addLog(getCurrentTime(), 'info', '开始模型训练...');
+          
+          const epochInterval = setInterval(() => {
+            if (epoch <= totalEpochs.value) {
+              // 模拟损失值下降
+              const loss = (100 / (epoch + 99)).toFixed(4);
+              currentLoss.value = loss;
+              
+              // 模拟准确率上升
+              const accuracy = ((epoch / totalEpochs.value) * 95).toFixed(2);
+              bestAccuracy.value = accuracy;
+              
+              // 更新进度
+              progress.value = 30 + (epoch / totalEpochs.value) * 60;
+              
+              // 每10个epoch添加一条日志
+              if (epoch % 10 === 0) {
+                addLog(getCurrentTime(), 'info', `Epoch ${epoch}/${totalEpochs.value}, Loss: ${loss}, Accuracy: ${accuracy}%`);
+              }
+              
+              currentEpoch.value = epoch;
+              epoch++;
+            } else {
+              clearInterval(epochInterval);
+              addLog(getCurrentTime(), 'success', '模型训练完成');
+            }
+          }, 100); // 每个epoch 100ms，模拟加速显示
+        };
+        
+        // 完成计算
+        const completeProcessing = () => {
+          progress.value = 100;
+          progressStatus.value = 'success';
+          currentStage.value = '计算完成';
+          addLog(getCurrentTime(), 'success', '模型计算完成！');
+          
+          // 3秒后允许查看结果
+          setTimeout(() => {
+            canNavigate.value = true;
+            estimatedTime.value = '已完成';
+          }, 3000);
+        };
+        
+        // 添加日志
+        const addLog = (time, type, content) => {
+          logs.value.push({ time, type, content });
+          // 滚动到底部
+          setTimeout(() => {
+            const logsSection = document.querySelector('.logs-section');
+            logsSection.scrollTop = logsSection.scrollHeight;
+          }, 100);
+        };
+        
+        // 获取当前时间
+        const getCurrentTime = () => {
+          const now = new Date();
+          const hours = now.getHours().toString().padStart(2, '0');
+          const minutes = now.getMinutes().toString().padStart(2, '0');
+          const seconds = now.getSeconds().toString().padStart(2, '0');
+          return `${hours}:${minutes}:${seconds}`;
+        };
+        
+        // 绘制训练动态图表
+        const drawTrainingChart = () => {
+          const chartDom = document.getElementById('trainingChart');
+          const myChart = echarts.init(chartDom);
+          
+          const option = {
+            tooltip: {
+              trigger: 'axis',
+              axisPointer: {
+                type: 'cross'
+              }
+            },
+            legend: {
+              data: ['损失值', '准确率']
+            },
+            xAxis: {
+              type: 'category',
+              data: [],
+              name: '训练轮次'
+            },
+            yAxis: [
+              {
+                type: 'value',
+                name: '损失值',
+                position: 'left'
+              },
+              {
+                type: 'value',
+                name: '准确率(%)',
+                position: 'right',
+                max: 100
+              }
+            ],
+            series: [
+              {
+                name: '损失值',
+                type: 'line',
+                smooth: true,
+                data: [],
+                itemStyle: {
+                  color: '#f56c6c'
+                }
+              },
+              {
+                name: '准确率',
+                type: 'line',
+                smooth: true,
+                yAxisIndex: 1,
+                data: [],
+                itemStyle: {
+                  color: '#67c23a'
+                }
+              }
+            ]
+          };
+          
+          myChart.setOption(option);
+          
+          // 模拟数据更新
+          let epoch = 1;
+          const updateInterval = setInterval(() => {
+            if (epoch <= 100) {
+              const loss = (100 / (epoch + 99)).toFixed(4);
+              const accuracy = ((epoch / 100) * 95).toFixed(2);
+              
+              myChart.appendData({
+                seriesIndex: 0,
+                data: [parseFloat(loss)]
+              });
+              
+              myChart.appendData({
+                seriesIndex: 1,
+                data: [parseFloat(accuracy)]
+              });
+              
+              myChart.appendData({
+                seriesIndex: 0,
+                data: [epoch],
+                dimension: 0
+              });
+              
+              myChart.appendData({
+                seriesIndex: 1,
+                data: [epoch],
+                dimension: 0
+              });
+              
+              epoch++;
+            } else {
+              clearInterval(updateInterval);
+            }
+          }, 100);
+          
+          // 响应式调整
+          window.addEventListener('resize', () => {
+            myChart.resize();
+          });
+        };
+        
+        // 处理取消计算
+        const handleCancel = () => {
+          ElementPlus.ElMessageBox.confirm('确定要取消当前计算吗？', '确认取消', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            ElementPlus.ElMessage.info('计算已取消');
+            window.location.href = 'model_gover.html';
+          }).catch(() => {
+            // 取消操作
+          });
+        };
+        
+        // 导航到结果页面
+        const navigateToResults = () => {
+          if (canNavigate.value) {
+            window.location.href = 'model_results.html';
+          }
+        };
+        
+        // 组件挂载时执行
+        onMounted(() => {
+          simulateProcessing();
+          drawTrainingChart();
+        });
+        
+        return {
+          projectInfo,
+          progress,
+          progressStatus,
+          currentStage,
+          currentEpoch,
+          totalEpochs,
+          currentLoss,
+          bestAccuracy,
+          estimatedTime,
+          canNavigate,
+          logs,
+          handleCancel,
+          navigateToResults
+        };
+      }
+    });
+    
+    // 使用 Element Plus
+    app.use(ElementPlus);
+    
+    // 挂载应用
+    app.mount('#app');
+  </script>
+
+  <script>
+    // 侧边栏交互功能
+    function toggleSidebar() {
+      document.querySelector('.sidebar').classList.toggle('show');
+    }
+
+    function switchMenu(menuName) {
+      // 更新菜单项激活状态
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.target.closest('.menu-item')?.classList.add('active');
+      
+      // 页面跳转
+      const urls = {
+        workbench: 'index.html',
+        data: 'data_gover.html',
+        model: 'model_gover.html',
+        profile: 'profile.html'
+      };
+      if (urls[menuName]) {
+        window.location.href = urls[menuName];
+      }
+    }
+
+    function goToProfile() {
+      window.location.href = 'profile.html';
+    }
+
+    function handleLogout() {
+      if (confirm('确定要退出登录吗？')) {
+        alert('已退出登录');
+      }
+    }
+  </script>
+</body>
+</html>

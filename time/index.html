@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工作台</title>
+  <!-- 引入稳定版本的 Vue 和 Element Plus（解决版本兼容问题） -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.full.min.js"></script>
+
+  <!-- 引入外部CSS -->
+  <link href="./workbench.css" rel="stylesheet">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- 侧边栏 -->
+    <aside class="sidebar" :class="{ show: showSidebar }">
+      <div class="sidebar-user" @click="goToProfile">
+        <div class="user-avatar">
+          <img :src="userInfo.avatar" alt="用户头像">
+        </div>
+        <div class="user-name">{{ userInfo.name }}</div>
+        <div class="user-role">{{ userInfo.role }}</div>
+      </div>
+      <div class="sidebar-menu">
+        <div class="menu-item" :class="{ active: currentMenu === 'workbench' }" @click="switchMenu('workbench')">
+          <i class="fa fa-tachometer menu-icon"></i>
+          <span>工作台</span>
+        </div>
+        <div class="menu-item" :class="{ active: currentMenu === 'data' }" @click="switchMenu('data')">
+          <i class="fa fa-database menu-icon"></i>
+          <span>数据管理</span>
+        </div>
+        <div class="menu-item" :class="{ active: currentMenu === 'model' }" @click="switchMenu('model')">
+          <i class="fa fa-cogs menu-icon"></i>
+          <span>模型管理</span>
+        </div>
+        <div class="menu-item" :class="{ active: currentMenu === 'profile' }" @click="switchMenu('profile')">
+          <i class="fa fa-user menu-icon"></i>
+          <span>个人信息</span>
+        </div>
+        <div class="menu-item" @click="handleLogout">
+          <i class="fa fa-sign-out menu-icon"></i>
+          <span>退出登录</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <div class="top-bar">
+        <button class="hamburger-btn" @click="toggleSidebar">
+          <i class="fa fa-bars"></i>
+        </button>
+        <div class="user-info-small" @click="goToProfile">
+          <img :src="userInfo.avatar" alt="头像" style="width: 36px; height: 36px; border-radius: 50%;">
+        </div>
+      </div>
+
+      <div class="workbench-container">
+        <div class="workbench-header">
+          <div class="workbench-title">
+            <i class="fa fa-tachometer mr-2"></i>工作台
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索项目名称"
+            prefix-icon="Search"
+            style="width: 300px;"
+            @input="handleSearch"
+          ></el-input>
+
+          <el-select
+            v-model="selectedStatus"
+            placeholder="筛选项目状态"
+            style="width: 180px;"
+            @change="handleFilter"
+          >
+            <el-option label="全部状态" value=""></el-option>
+            <el-option label="已完成" value="completed"></el-option>
+            <el-option label="计算中" value="running"></el-option>
+            <el-option label="计算失败" value="failed"></el-option>
+          </el-select>
+
+          <el-select
+            v-model="selectedTimeRange"
+            placeholder="筛选创建时间"
+            style="width: 180px;"
+            @change="handleFilter"
+          >
+            <el-option label="全部时间" value=""></el-option>
+            <el-option label="近7天" value="7d"></el-option>
+            <el-option label="近30天" value="30d"></el-option>
+            <el-option label="近90天" value="90d"></el-option>
+          </el-select>
+        </div>
+
+        <el-row :gutter="24">
+          <el-col :span="24" v-if="filteredProjects.length === 0">
+            <div class="empty-state">
+              <i class="fa fa-folder-open-o text-5xl text-gray-300 mb-4"></i>
+              <p class="text-gray-500">暂无预测项目</p>
+              <el-button type="primary" @click="handleCreateProject" class="mt-4">
+                  <i class="fa fa-plus mr-2"></i>立即创建第一个项目
+                </el-button>
+            </div>
+          </el-col>
+
+          <!-- 现有项目卡片 - 调整为每行显示更少的卡片，使单个卡片更大 -->
+          <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="(project, index) in filteredProjects" :key="index">
+            <el-card
+              class="project-card"
+              shadow="hover"
+              @click="handleViewResult(project.id)"
+              style="cursor:pointer;"
+            >
+              <div class="card-content">
+                <div class="card-header">
+                  <div class="project-name" :title="project.name">{{ project.name }}</div>
+                  <el-dropdown size="small" @click.stop>
+                    <i class="fa fa-ellipsis-v text-gray-400 cursor-pointer" style="font-size: 18px;"></i>
+                    <template #dropdown>
+                      <el-dropdown-menu>
+                        <el-dropdown-item @click="handleViewResult(project.id)">
+                          <i class="fa fa-bar-chart mr-2"></i>查看结果
+                        </el-dropdown-item>
+                        <el-dropdown-item @click="handleRetrain(project.id)">
+                          <i class="fa fa-refresh mr-2"></i>重新训练
+                        </el-dropdown-item>
+                        <el-dropdown-item @click="handleDeleteProject(project.id)" class="text-danger">
+                          <i class="fa fa-trash mr-2"></i>删除项目
+                        </el-dropdown-item>
+                      </el-dropdown-menu>
+                    </template>
+                  </el-dropdown>
+                </div>
+
+                <!-- 分三行展示元信息 -->
+                <div class="project-meta">
+                  <span><i class="fa fa-calendar-o mr-1"></i>{{ project.createTime }}</span>
+                </div>
+                <div class="project-meta">
+                  <span><i class="fa fa-file-text-o mr-1"></i>{{ project.datasetName }}</span>
+                </div>
+                <div class="project-meta">
+                  <span><i class="fa fa-cogs mr-1"></i>{{ project.modelType }}</span>
+                </div>
+
+                <div class="project-desc" :title="project.desc">{{ project.desc || "无项目简介" }}</div>
+
+                <el-tag :type="getTagType(project.status)" size="small" class="mb-4">
+                  {{ getStatusText(project.status) }}
+                </el-tag>
+
+                <div class="card-actions">
+                  <el-button type="text" size="small" @click.stop="handleViewResult(project.id)">查看结果</el-button>
+                  <el-button type="primary" size="small" @click.stop="handleRetrain(project.id)">重新训练</el-button>
+                </div>
+              </div>
+            </el-card>
+          </el-col>
+
+          <!-- 新建项目卡片 -->
+          <el-col :xs="24" :sm="12" :md="8" :lg="6" v-else>
+            <el-card class="create-project-card" shadow="hover" @click="handleCreateProject">
+              <div class="create-icon"><i class="fa fa-plus"></i></div>
+              <div class="create-text">新建项目</div>
+              <div class="create-desc">创建预测任务，上传数据集并选择模型</div>
+            </el-card>
+          </el-col>
+        </el-row>
+
+        <el-pagination
+          v-if="filteredProjects.length > 0"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[6, 12]"
+          :page-size="pageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="filteredProjects.length"
+          class="mt-8 text-right"
+        ></el-pagination>
+      </div>
+    </main>
+
+    <!-- 删除弹窗 -->
+    <el-dialog title="确认删除" v-model="showDeleteDialog" width="30%">
+      <p>删除后项目数据将全部清除，不可恢复。</p>
+      <template #footer>
+        <el-button @click="showDeleteDialog = false">取消</el-button>
+        <el-button type="danger" @click="confirmDelete">确认删除</el-button>
+      </template>
+    </el-dialog>
+  </div>
+
+  <!-- 引入外部JS -->
+  <script src="./workbench.js"></script>
+</body>
+</html>

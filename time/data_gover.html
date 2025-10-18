@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据管理</title>
+    <!-- 引入公共资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.full.min.js"></script>
+    
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f5f7fa;
+            font-family: "Inter", system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 上传区域样式 */
+        .upload-container {
+            margin-bottom: 24px;
+        }
+        .upload-container i {
+            color: #165dff;
+        }
+        .upload-container p {
+            color: #606266;
+        }
+        
+        /* 数据处理选项样式 */
+        .process-container {
+            margin-bottom: 24px;
+        }
+        .process-container h3 {
+            color: #303133;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .option-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .option-group label {
+            cursor: pointer;
+            color: #606266;
+        }
+        .option-group input[type="checkbox"] {
+            cursor: pointer;
+        }
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 240px;
+            background-color: #fff;
+            border-right: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0,0,0,0.02);
+            z-index: 10;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+        }
+        .sidebar.show {
+            left: 0;
+        }
+        .sidebar-user {
+            padding: 24px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .user-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            border: 2px solid #165dff33;
+            overflow: hidden;
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .user-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1d2129;
+            margin-bottom: 4px;
+        }
+        .user-role {
+            font-size: 12px;
+            color: #86909c;
+        }
+        .sidebar-menu {
+            flex: 1;
+            padding: 16px 0;
+            overflow-y: auto;
+        }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            color: #4e5969;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .menu-item:hover, .menu-item.active {
+            background-color: #165dff10;
+            color: #165dff;
+        }
+        .menu-item.active {
+            border-left: 3px solid #165dff;
+        }
+        .menu-icon {
+            margin-right: 12px;
+            font-size: 16px;
+        }
+        
+        /* 主内容区样式 */
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 24px;
+            overflow-y: auto;
+            height: 100vh;
+        }
+        .data-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        .top-bar {
+            height: 60px;
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            justify-content: space-between;
+            display: none;
+        }
+        .hamburger-btn {
+            border: none;
+            background: transparent;
+            font-size: 20px;
+            color: #1d2129;
+            cursor: pointer;
+        }
+        
+        /* 用户管理表格样式 */
+        .management-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .management-tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .management-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .management-tab.active {
+            color: #165dff;
+            border-bottom-color: #165dff;
+            font-weight: 500;
+        }
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .user-table th {
+            background-color: #f8f9fa;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .user-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        .user-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            padding: 4px 12px;
+            border: 1px solid #ddd;
+            background-color: white;
+            color: #666;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .action-btn:hover {
+            background-color: #f0f0f0;
+        }
+        .action-btn.delete {
+            color: #f56c6c;
+            border-color: #fbc4c4;
+        }
+        .action-btn.delete:hover {
+            background-color: #fef0f0;
+        }
+        .action-btn.ban {
+            color: #e6a23c;
+            border-color: #ffe58f;
+        }
+        .action-btn.ban:hover {
+            background-color: #fdf6ec;
+        }
+        
+        /* 响应式适配 */
+        @media (max-width: 992px) {
+            .sidebar {
+                left: -240px;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .top-bar {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-user" onclick="goToProfile()">
+                <div class="user-avatar">
+                    <img id="userAvatar" src="https://picsum.photos/128/128" alt="用户头像">
+                </div>
+                <div id="userName" class="user-name">张三</div>
+                <div id="userRole" class="user-role">数据管理员</div>
+            </div>
+            <div class="sidebar-menu">
+                <div class="menu-item" onclick="handleMenuChange('workbench')">
+                    <i class="fa fa-tachometer menu-icon"></i>
+                    <span>工作台</span>
+                </div>
+                <div class="menu-item active" onclick="handleMenuChange('data')">
+                    <i class="fa fa-database menu-icon"></i>
+                    <span>数据管理</span>
+                </div>
+                <div class="menu-item" onclick="handleMenuChange('model')">
+                    <i class="fa fa-cogs menu-icon"></i>
+                    <span>模型管理</span>
+                </div>
+                <div class="menu-item" onclick="handleMenuChange('profile')">
+                    <i class="fa fa-user menu-icon"></i>
+                    <span>个人信息</span>
+                </div>
+                <div class="menu-item" onclick="handleLogout()">
+                    <i class="fa fa-sign-out menu-icon"></i>
+                    <span>退出登录</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="top-bar">
+                <button class="hamburger-btn" onclick="toggleSidebar()">
+                    <i class="fa fa-bars"></i>
+                </button>
+                <button class="action-btn" style="background-color: #1890ff; color: white; border-color: #1890ff; margin-left: 12px;" onclick="window.location.href='new_project.html'">
+                    <i class="fa fa-file-text-o mr-1"></i>新建项目
+                </button>
+                <div class="user-info-small" onclick="goToProfile()">
+                    <img id="smallUserAvatar" src="https://picsum.photos/128/128" alt="头像" style="width: 36px; height: 36px; border-radius: 50%;">
+                </div>
+            </div>
+
+            <div class="data-title">
+                <i class="fa fa-database mr-2"></i>数据管理
+            </div>
+
+            <!-- 数据管理内容 -->
+            <div class="management-container">
+                <div class="management-tabs">
+                    <div class="management-tab active" onclick="switchTab('batch')">批量管理</div>
+                    <div class="management-tab" onclick="switchTab('query')">查询</div>
+                </div>
+                
+                <!-- 查询功能区域 -->
+                <div id="querySection">
+                    <div class="filter-bar mb-4">
+                        <div style="position: relative; width: 300px;">
+                            <i class="fa fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                            <input
+                                id="searchInput"
+                                type="text"
+                                placeholder="搜索数据名称"
+                                style="width: 100%; padding: 8px 12px 8px 35px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 14px;"
+                            >
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 批量管理功能区域 -->
+                <div id="batchSection" class="batch-actions mb-4">
+                    <div class="batch-controls">
+                        <button id="batchEditRemarkBtn" class="action-btn" onclick="startBatchRemarkEdit()">
+                            <i class="fa fa-edit mr-1"></i>批量编辑备注
+                        </button>
+                        <button id="batchSetProcessBtn" class="action-btn" onclick="startBatchProcessSetting()">
+                            <i class="fa fa-sliders mr-1"></i>批量设置预处理
+                        </button>
+                        <button id="batchDeleteBtn" class="action-btn delete" onclick="batchDelete()">
+                            <i class="fa fa-trash mr-1"></i>批量删除
+                        </button>
+                        <button class="action-btn" style="background-color: #67c23a; color: white; border-color: #67c23a;" onclick="window.location.href='new_project.html'">
+                            <i class="fa fa-file-text-o mr-1"></i>新建项目
+                        </button>
+                        <button class="action-btn" style="background-color: #909399; color: white; border-color: #909399;" onclick="selectForNewProject()">
+                            <i class="fa fa-check-square-o mr-1"></i>选择用于新建项目
+                        </button>
+                        <input type="text" id="batchRemarkInput" placeholder="请输入批量备注内容" class="hidden batch-input" style="padding: 4px 8px; border: 1px solid #dcdfe6; border-radius: 4px; margin-right: 8px;">
+                        <select id="batchProcessSelect" class="hidden batch-input process-select" style="margin-right: 8px;">
+                            <option value="none">原始数据（不处理）</option>
+                            <option value="normalize">归一化</option>
+                            <option value="standardize">标准化</option>
+                            <option value="mean">均值化</option>
+                            <option value="minmax">Min-Max缩放</option>
+                        </select>
+                        <button id="confirmActionBtn" class="hidden action-btn save-btn">
+                            <i class="fa fa-check mr-1"></i>确认
+                        </button>
+                        <button id="cancelActionBtn" class="hidden action-btn cancel-btn">
+                            <i class="fa fa-times mr-1"></i>取消
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 文件上传区域 -->
+                <div class="upload-container bg-white p-6 rounded-lg shadow-sm mb-6">
+                    <div id="uploadArea" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 transition-colors duration-300">
+                        <i class="fa fa-cloud-upload text-4xl text-gray-400 mb-4"></i>
+                        <p class="mb-2">点击或拖拽文件到此处上传</p>
+                        <p class="text-sm text-gray-500 mb-4">支持CSV、Excel、JSON格式文件</p>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json" class="hidden">
+                        <button class="action-btn" onclick="document.getElementById('fileInput').click()">
+                            <i class="fa fa-plus mr-1"></i>选择文件
+                        </button>
+                    </div>
+                </div>
+
+
+
+                <!-- 数据管理表格 -->
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllCheckbox"> 序号</th>
+                            <th>文件名</th>
+                            <th>备注</th>
+                            <th>预处理方式</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="datasetsTableBody">
+                        <!-- 数据集将通过JavaScript动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 全局配置
+        const API_BASE_URL = '/api/data';
+        
+        // 获取当前用户ID（实际项目中应该从登录状态或token中获取）
+        function getCurrentUserId() {
+            // 这里模拟获取用户ID，实际项目中应该从登录状态中获取
+            return 'user_001'; // 示例用户ID
+        }
+        
+        // API请求工具函数
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                const url = `${API_BASE_URL}${endpoint}`;
+                
+                // 默认选项
+                const defaultOptions = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include', // 包含cookies
+                };
+                
+                // 合并选项
+                const fetchOptions = {
+                    ...defaultOptions,
+                    ...options,
+                    headers: {
+                        ...defaultOptions.headers,
+                        ...options.headers,
+                    },
+                };
+                
+                // 发送请求
+                const response = await fetch(url, fetchOptions);
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // 对于下载请求，直接返回response
+                if (fetchOptions.responseType === 'blob' || endpoint.includes('/download')) {
+                    return response;
+                }
+                
+                // 解析JSON响应
+                const data = await response.json();
+                
+                // 检查API返回的状态码
+                if (data.code !== 200 && data.code !== 201) {
+                    throw new Error(data.message || 'API请求失败');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API请求失败:', error);
+                // 显示错误消息
+                alert(`操作失败: ${error.message}`);
+                throw error;
+            }
+        }
+        
+        // 初始化用户信息，保持与index.html一致
+        function initUserInfo() {
+            // 这里可以根据实际情况从localStorage或API获取用户信息
+            // 为了与index.html保持一致，设置相同的用户信息
+            const userInfo = {
+                avatar: "https://picsum.photos/id/1005/200/200",
+                name: '张三',
+                role: '普通用户'
+            };
+            
+            // 更新侧边栏用户信息
+            document.getElementById('userAvatar').src = userInfo.avatar;
+            document.getElementById('userName').textContent = userInfo.name;
+            document.getElementById('userRole').textContent = userInfo.role;
+            
+            // 更新顶部栏用户头像
+            document.getElementById('smallUserAvatar').src = userInfo.avatar;
+        }
+
+        // 侧边栏功能
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('show');
+            }
+        }
+
+        // 菜单切换
+        function handleMenuChange(menuKey) {
+            const menuMap = {
+                'workbench': 'index.html',
+                'data': 'data_gover.html',
+                'model': 'model_gover.html',
+                'profile': 'profile.html'
+            };
+            const url = menuMap[menuKey];
+            if (url && window.location.pathname !== `/${url}`) {
+                window.location.href = url;
+            }
+        }
+
+        // 跳转到个人信息
+        function goToProfile() {
+            handleMenuChange('profile');
+        }
+
+        // 退出登录
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                alert('已退出登录');
+            }
+        }
+
+        // 加载数据集（从后端API获取）
+        async function loadDatasets() {
+            try {
+                // 显示加载状态
+                const tableBody = document.getElementById('datasetsTableBody');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #909399;">
+                            <i class="fa fa-spinner fa-spin text-4xl mb-2"></i>
+                            <p>加载中...</p>
+                        </td>
+                    </tr>
+                `;
+                
+                // 调用后端API获取数据集列表
+                const response = await apiRequest(`/datasets?userId=${getCurrentUserId()}`);
+                
+                // 从API响应中获取数据集列表
+                const datasets = response.data || [];
+                
+                // 渲染数据集到表格
+                if (datasets.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #909399;">
+                                <i class="fa fa-database text-4xl mb-2"></i>
+                                <p>暂无数据集</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // 生成表格行
+                let html = '';
+                datasets.forEach((dataset, index) => {
+                    // 注意：API返回的字段名可能与前端期望的不同，这里做映射
+                    const tableDataset = {
+                        id: dataset.id,
+                        name: dataset.fileName || dataset.datasetName, // 适配API返回的字段名
+                        remark: dataset.remark || '',
+                        processMethod: dataset.processMethod || 'none',
+                        format: dataset.fileFormat || '',
+                        uploadTime: dataset.uploadTime || new Date().toISOString()
+                    };
+                    
+                    html += `
+                        <tr data-row-id="${tableDataset.id}">
+                            <td><input type="checkbox" class="data-checkbox" data-id="${tableDataset.id}"> ${index + 1}</td>
+                            <td>${tableDataset.name}</td>
+                            <td class="remark-cell">
+                                <span class="remark-text">${tableDataset.remark || '暂无备注'}</span>
+                                <button class="edit-btn" onclick="editRemark('${tableDataset.id}')">
+                                    <i class="fa fa-pencil"></i>
+                                </button>
+                            </td>
+                            <td>
+                                <select class="process-select" onchange="updateProcessMethod('${tableDataset.id}', this.value)">
+                                    <option value="none" ${tableDataset.processMethod === 'none' ? 'selected' : ''}>原始数据（不处理）</option>
+                                    <option value="normalize" ${tableDataset.processMethod === 'normalize' ? 'selected' : ''}>归一化</option>
+                                    <option value="standardize" ${tableDataset.processMethod === 'standardize' ? 'selected' : ''}>标准化</option>
+                                    <option value="minmax" ${tableDataset.processMethod === 'minmax' ? 'selected' : ''}>Min-Max缩放</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn" onclick="handleDownload('${tableDataset.id}')">
+                                        <i class="fa fa-download mr-1"></i>下载
+                                    </button>
+                                    <button class="action-btn delete" onclick="handleDelete('${tableDataset.id}')">
+                                        <i class="fa fa-trash mr-1"></i>删除
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableBody.innerHTML = html;
+            } catch (error) {
+                console.error('加载数据集失败:', error);
+                // 显示错误状态
+                const tableBody = document.getElementById('datasetsTableBody');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #f56c6c;">
+                            <i class="fa fa-exclamation-circle text-4xl mb-2"></i>
+                            <p>加载数据集失败，请重试</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // 删除数据集（调用后端API）
+        async function handleDelete(dataId) {
+            if (confirm('确定要删除该数据集吗？')) {
+                try {
+                    // 调用后端API删除数据集
+                    await apiRequest(`/datasets/${dataId}`, {
+                        method: 'DELETE',
+                        body: JSON.stringify({
+                            userId: getCurrentUserId()
+                        })
+                    });
+                    
+                    // 重新加载数据集
+                    await loadDatasets();
+                    alert('数据集已删除');
+                } catch (error) {
+                    console.error('删除数据集失败:', error);
+                }
+            }
+        }
+
+        // 下载数据集（调用后端API）
+        async function handleDownload(dataId) {
+            try {
+                // 调用后端API下载数据集
+                const response = await fetch(`${API_BASE_URL}/datasets/${dataId}/download?userId=${getCurrentUserId()}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`下载失败: ${response.status}`);
+                }
+                
+                // 获取文件名（从响应头或API中）
+                const contentDisposition = response.headers.get('content-disposition');
+                let fileName = 'dataset.csv';
+                
+                if (contentDisposition) {
+                    const matches = /filename="([^"]*)"/.exec(contentDisposition);
+                    if (matches && matches[1]) {
+                        fileName = matches[1];
+                    }
+                }
+                
+                // 处理文件下载
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                
+                // 清理
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('下载数据集失败:', error);
+                alert(`下载失败: ${error.message}`);
+            }
+        }
+
+        // 编辑备注
+        function editRemark(dataId) {
+            const row = document.querySelector(`tr[data-row-id="${dataId}"]`);
+            const remarkCell = row.querySelector('.remark-cell');
+            const remarkText = remarkCell.querySelector('.remark-text').textContent;
+            
+            // 创建编辑模式的HTML
+            const editHtml = `
+                <input type="text" value="${remarkText}" class="remark-edit-input">
+                <button class="action-btn save-btn" onclick="saveRemark('${dataId}', this.previousElementSibling.value)">
+                    <i class="fa fa-save"></i>保存
+                </button>
+                <button class="action-btn cancel-btn" onclick="cancelEditRemark('${dataId}', '${remarkText}')">
+                    <i class="fa fa-times"></i>取消
+                </button>
+            `;
+            
+            remarkCell.innerHTML = editHtml;
+            remarkCell.querySelector('.remark-edit-input').focus();
+        }
+        
+        // 保存备注（调用后端API）
+        async function saveRemark(dataId, newRemark) {
+            try {
+                // 调用后端API更新备注
+                await apiRequest(`/datasets/${dataId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        userId: getCurrentUserId(),
+                        remark: newRemark
+                    })
+                });
+                
+                // 重新加载数据集
+                await loadDatasets();
+            } catch (error) {
+                console.error('保存备注失败:', error);
+            }
+        }
+        
+        function cancelEditRemark(dataId, originalRemark) {
+            // 恢复原始备注显示
+            const row = document.querySelector(`tr[data-row-id="${dataId}"]`);
+            if (row) {
+                const remarkCell = row.querySelector('.remark-cell');
+                remarkCell.innerHTML = `
+                    <span class="remark-text">${originalRemark || '暂无备注'}</span>
+                    <button class="edit-btn" onclick="editRemark('${dataId}')">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                `;
+            }
+        }
+        
+        // 更新文件预处理方式（调用后端API）
+        async function updateProcessMethod(dataId, method) {
+            try {
+                // 调用后端API更新预处理方式
+                await apiRequest(`/datasets/${dataId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        userId: getCurrentUserId(),
+                        // 注意：API文档中没有明确提到processMethod字段，这里假设后端支持
+                        // 如果不支持，可能需要与后端协商或使用其他方式实现
+                        remark: null, // 只更新预处理方式，不修改备注
+                        tags: null,   // 只更新预处理方式，不修改标签
+                        processMethod: method // 扩展字段，可能需要与后端确认
+                    })
+                });
+                
+                const methodMap = {
+                    'none': '原始数据（不处理）',
+                    'normalize': '归一化',
+                    'standardize': '标准化',
+                    'minmax': 'Min-Max缩放'
+                };
+                
+                alert(`已更新数据项 ${dataId} 的预处理方式为: ${methodMap[method] || method}`);
+            } catch (error) {
+                console.error('更新预处理方式失败:', error);
+                // 重新加载数据集以恢复原始状态
+                await loadDatasets();
+            }
+        }
+
+        // 文件上传功能
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            
+            // 点击上传区域触发文件选择
+            uploadArea.addEventListener('click', function(e) {
+                // 如果点击的是子元素，不触发文件选择
+                if (e.target !== this && !this.contains(e.target)) {
+                    return;
+                }
+                fileInput.click();
+            });
+            
+            // 拖拽上传
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('border-blue-500', 'bg-blue-50');
+            });
+            
+            uploadArea.addEventListener('dragleave', function() {
+                this.classList.remove('border-blue-500', 'bg-blue-50');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('border-blue-500', 'bg-blue-50');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+            
+            // 文件选择变化
+            fileInput.addEventListener('change', function() {
+                if (this.files.length) {
+                    handleFiles(this.files);
+                }
+                // 清空input以允许重新选择相同文件
+                this.value = '';
+            });
+        }
+
+        // 处理文件上传（调用后端API）
+        async function handleFiles(files) {
+            // 处理每个文件
+            for (const file of Array.from(files)) {
+                try {
+                    // 创建一个表单来输入数据集名称和备注
+                    const datasetName = prompt(`请输入数据集名称（默认：${file.name}）`, file.name);
+                    if (datasetName === null) { // 用户取消
+                        continue;
+                    }
+                    
+                    const remark = prompt('请输入备注信息（可选）', '');
+                    if (remark === null) { // 用户取消
+                        continue;
+                    }
+                    
+                    const tags = prompt('请输入标签（多个标签以逗号分隔，可选）', '');
+                    if (tags === null) { // 用户取消
+                        continue;
+                    }
+                    
+                    // 显示上传中状态
+                    alert(`开始上传文件：${file.name}，请稍候...`);
+                    
+                    // 创建FormData对象
+                    const formData = new FormData();
+                    formData.append('userId', getCurrentUserId());
+                    formData.append('file', file);
+                    if (datasetName) {
+                        formData.append('datasetName', datasetName);
+                    }
+                    if (remark) {
+                        formData.append('remark', remark);
+                    }
+                    if (tags) {
+                        formData.append('tags', tags);
+                    }
+                    
+                    // 调用后端API上传文件
+                    const response = await fetch(`${API_BASE_URL}/upload`, {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                        // 注意：不要设置Content-Type，让浏览器自动处理
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`上传失败: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    if (data.code !== 201) {
+                        throw new Error(data.message || '上传失败');
+                    }
+                    
+                    alert(`文件 ${file.name} 上传成功！`);
+                    
+                } catch (error) {
+                    console.error('文件上传失败:', error);
+                    alert(`上传失败: ${error.message}`);
+                }
+            }
+            
+            // 重新加载数据集列表
+            await loadDatasets();
+        }
+        
+        // 备注编辑功能
+        function editRemark(dataId) {
+            const row = document.querySelector(`tr[data-row-id="${dataId}"]`);
+            const remarkCell = row.querySelector('.remark-cell');
+            const remarkText = remarkCell.querySelector('.remark-text').textContent;
+            
+            // 创建编辑模式的HTML
+            const editHtml = `
+                <input type="text" value="${remarkText}" class="remark-edit-input">
+                <button class="action-btn save-btn" onclick="saveRemark(${dataId}, this.previousElementSibling.value)">
+                    <i class="fa fa-save"></i>保存
+                </button>
+                <button class="action-btn cancel-btn" onclick="cancelEditRemark(${dataId}, '${remarkText}')">
+                    <i class="fa fa-times"></i>取消
+                </button>
+            `;
+            
+            remarkCell.innerHTML = editHtml;
+            remarkCell.querySelector('.remark-edit-input').focus();
+        }
+        
+        function saveRemark(dataId, newRemark) {
+            const row = document.querySelector(`tr[data-row-id="${dataId}"]`);
+            const remarkCell = row.querySelector('.remark-cell');
+            
+            // 恢复显示模式
+            remarkCell.innerHTML = `
+                <span class="remark-text">${newRemark}</span>
+                <button class="edit-btn" onclick="editRemark(${dataId})">
+                    <i class="fa fa-pencil"></i>
+                </button>
+            `;
+            
+            alert(`备注已更新为: ${newRemark}`);
+        }
+        
+        function cancelEditRemark(dataId, originalRemark) {
+            const row = document.querySelector(`tr[data-row-id="${dataId}"]`);
+            const remarkCell = row.querySelector('.remark-cell');
+            
+            // 恢复原始显示模式
+            remarkCell.innerHTML = `
+                <span class="remark-text">${originalRemark}</span>
+                <button class="edit-btn" onclick="editRemark(${dataId})">
+                    <i class="fa fa-pencil"></i>
+                </button>
+            `;
+        }
+        
+        // 更新文件预处理方式
+        function updateProcessMethod(dataId, method) {
+            const methodMap = {
+                'none': '原始数据（不处理）',
+                'normalize': '归一化',
+                'standardize': '标准化',
+                'mean': '均值化',
+                'minmax': 'Min-Max缩放'
+            };
+            
+            alert(`已更新数据项 ${dataId} 的预处理方式为: ${methodMap[method] || method}`);
+        }
+
+        // 标签页切换
+        function switchTab(tabName) {
+            // 切换标签样式
+            const tabs = document.querySelectorAll('.management-tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.trim() === (tabName === 'query' ? '查询' : '批量管理')) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // 切换内容显示
+            document.getElementById('querySection').style.display = tabName === 'query' ? 'block' : 'none';
+            document.getElementById('batchSection').style.display = tabName === 'batch' ? 'block' : 'none';
+        }
+
+        // 实时搜索功能（前端过滤）
+        function setupRealTimeSearch() {
+            const searchInput = document.getElementById('searchInput');
+            
+            searchInput.addEventListener('input', function() {
+                const searchValue = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#datasetsTableBody tr');
+                
+                // 如果没有搜索内容，显示所有行
+                if (!searchValue) {
+                    rows.forEach(row => {
+                        row.style.display = '';
+                    });
+                    return;
+                }
+                
+                let hasVisibleRows = false;
+                
+                // 过滤表格行
+                rows.forEach(row => {
+                    const fileName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                    const remark = row.querySelector('.remark-text')?.textContent.toLowerCase() || '';
+                    
+                    const isMatch = fileName.includes(searchValue) || remark.includes(searchValue);
+                    row.style.display = isMatch ? '' : 'none';
+                    
+                    if (isMatch) {
+                        hasVisibleRows = true;
+                    }
+                });
+                
+                // 如果没有匹配的行，显示提示
+                const tableBody = document.getElementById('datasetsTableBody');
+                if (!hasVisibleRows && rows.length > 0) {
+                    // 保存当前行内容，以便恢复
+                    const tempRows = [];
+                    rows.forEach(row => {
+                        tempRows.push(row);
+                    });
+                    
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #909399;">
+                                <i class="fa fa-search text-4xl mb-2"></i>
+                                <p>未找到匹配的数据集</p>
+                            </td>
+                        </tr>
+                    `;
+                    
+                    // 当搜索框清空时，恢复原始表格
+                    searchInput.addEventListener('input', function restoreTable() {
+                        if (!this.value) {
+                            tableBody.innerHTML = '';
+                            tempRows.forEach(row => {
+                                tableBody.appendChild(row);
+                            });
+                            // 移除这个临时事件监听器
+                            searchInput.removeEventListener('input', restoreTable);
+                        }
+                    }, { once: false });
+                }
+            });
+        }
+
+        // 批量管理功能
+        let currentBatchAction = '';
+        
+        function setupBatchManagement() {
+            // 全选/取消全选功能
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.data-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+            
+            // 确认按钮事件
+            document.getElementById('confirmActionBtn').addEventListener('click', function() {
+                confirmBatchAction();
+            });
+            
+            // 取消按钮事件
+            document.getElementById('cancelActionBtn').addEventListener('click', function() {
+                cancelBatchAction();
+            });
+        }
+        
+        function startBatchRemarkEdit() {
+            if (!hasSelectedItems()) {
+                alert('请先选择要操作的数据项');
+                return;
+            }
+            
+            currentBatchAction = 'remark';
+            showBatchControls(true);
+            document.getElementById('batchRemarkInput').classList.remove('hidden');
+            document.getElementById('batchRemarkInput').focus();
+        }
+        
+        function startBatchProcessSetting() {
+            if (!hasSelectedItems()) {
+                alert('请先选择要操作的数据项');
+                return;
+            }
+            
+            currentBatchAction = 'process';
+            showBatchControls(true);
+            document.getElementById('batchProcessSelect').classList.remove('hidden');
+        }
+        
+        // 批量删除（调用后端API）
+        async function batchDelete() {
+            if (!hasSelectedItems()) {
+                alert('请先选择要删除的数据项');
+                return;
+            }
+            
+            if (confirm('确定要删除选中的数据集吗？')) {
+                try {
+                    const selectedIds = getSelectedIds();
+                    
+                    // 逐个删除每个数据集（也可以实现批量删除API）
+                    let successCount = 0;
+                    for (const id of selectedIds) {
+                        try {
+                            await apiRequest(`/datasets/${id}`, {
+                                method: 'DELETE',
+                                body: JSON.stringify({
+                                    userId: getCurrentUserId()
+                                })
+                            });
+                            successCount++;
+                        } catch (error) {
+                            console.error(`删除数据集 ${id} 失败:`, error);
+                        }
+                    }
+                    
+                    // 重新加载数据集
+                    await loadDatasets();
+                    alert(`已成功删除 ${successCount} 个数据集`);
+                } catch (error) {
+                    console.error('批量删除失败:', error);
+                }
+            }
+        }
+        
+        // 批量操作确认（调用后端API）
+        async function confirmBatchAction() {
+            const selectedIds = getSelectedIds();
+            
+            if (currentBatchAction === 'remark') {
+                const remark = document.getElementById('batchRemarkInput').value;
+                if (remark.trim() === '') {
+                    alert('请输入备注内容');
+                    return;
+                }
+                
+                try {
+                    // 逐个更新每个数据集的备注
+                    let successCount = 0;
+                    for (const id of selectedIds) {
+                        try {
+                            await apiRequest(`/datasets/${id}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({
+                                    userId: getCurrentUserId(),
+                                    remark: remark
+                                })
+                            });
+                            successCount++;
+                        } catch (error) {
+                            console.error(`更新数据集 ${id} 的备注失败:`, error);
+                        }
+                    }
+                    
+                    alert(`已成功为 ${successCount} 个数据项更新备注`);
+                    
+                    // 重新加载数据集
+                    await loadDatasets();
+                } catch (error) {
+                    console.error('批量更新备注失败:', error);
+                }
+            }
+            else if (currentBatchAction === 'process') {
+                const method = document.getElementById('batchProcessSelect').value;
+                const methodMap = {
+                    'none': '原始数据（不处理）',
+                    'normalize': '归一化',
+                    'standardize': '标准化',
+                    'minmax': 'Min-Max缩放'
+                };
+                
+                try {
+                    // 逐个更新每个数据集的预处理方式
+                    let successCount = 0;
+                    for (const id of selectedIds) {
+                        try {
+                            await apiRequest(`/datasets/${id}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({
+                                    userId: getCurrentUserId(),
+                                    remark: null,
+                                    tags: null,
+                                    processMethod: method // 扩展字段
+                                })
+                            });
+                            successCount++;
+                        } catch (error) {
+                            console.error(`更新数据集 ${id} 的预处理方式失败:`, error);
+                        }
+                    }
+                    
+                    alert(`已成功为 ${successCount} 个数据项更新预处理方式为: ${methodMap[method]}`);
+                    
+                    // 重新加载数据集
+                    await loadDatasets();
+                } catch (error) {
+                    console.error('批量更新预处理方式失败:', error);
+                }
+            }
+            
+            cancelBatchAction();
+        }
+        
+        function cancelBatchAction() {
+            showBatchControls(false);
+            document.getElementById('batchRemarkInput').value = '';
+            currentBatchAction = '';
+        }
+        
+        function showBatchControls(show) {
+            const batchControls = document.querySelectorAll('.batch-actions button:not(#confirmActionBtn):not(#cancelActionBtn)');
+            const confirmBtns = document.querySelectorAll('#confirmActionBtn, #cancelActionBtn');
+            const inputControls = document.querySelectorAll('.batch-input');
+            
+            if (show) {
+                batchControls.forEach(btn => btn.classList.add('hidden'));
+                confirmBtns.forEach(btn => btn.classList.remove('hidden'));
+            } else {
+                batchControls.forEach(btn => btn.classList.remove('hidden'));
+                confirmBtns.forEach(btn => btn.classList.add('hidden'));
+                inputControls.forEach(ctrl => ctrl.classList.add('hidden'));
+            }
+        }
+        
+        function hasSelectedItems() {
+            const checkboxes = document.querySelectorAll('.data-checkbox:checked');
+            return checkboxes.length > 0;
+        }
+        
+        function getSelectedIds() {
+            const checkboxes = document.querySelectorAll('.data-checkbox:checked');
+            return Array.from(checkboxes).map(checkbox => checkbox.dataset.id);
+        }
+        
+        // 选择数据用于新建项目
+        function selectForNewProject() {
+            if (!hasSelectedItems()) {
+                alert('请先选择要使用的数据集');
+                return;
+            }
+            
+            const selectedIds = getSelectedIds();
+            // 构建URL参数
+            const params = new URLSearchParams();
+            params.append('selectedData', JSON.stringify(selectedIds));
+            
+            // 跳转到新建项目页面，带上选中的数据ID
+            window.location.href = `new_project.html?${params.toString()}`;
+        }
+        
+        // 设置头像点击跳转功能
+        function setupAvatarClick() {
+            const avatars = document.querySelectorAll('#userAvatar, #smallUserAvatar');
+            avatars.forEach(avatar => {
+                // 添加点击事件直接跳转到个人信息
+                avatar.addEventListener('click', goToProfile);
+                // 添加鼠标悬停效果提示可点击
+                avatar.style.cursor = 'pointer';
+                avatar.style.transition = 'transform 0.2s';
+                avatar.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.05)';
+                });
+                avatar.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+        }
+        
+        // 页面加载时初始化
+        window.onload = function() {
+            initUserInfo();
+            setupRealTimeSearch();
+            setupFileUpload();
+            setupBatchManagement();
+            setupAvatarClick();
+            
+            // 默认显示批量管理，隐藏查询
+            document.getElementById('querySection').style.display = 'none';
+            document.getElementById('batchSection').style.display = 'block';
+            
+            // 加载数据集（异步）
+            loadDatasets();
+            
+            // 添加必要的样式
+            const style = document.createElement('style');
+            style.textContent = `
+                .remark-cell {
+                    position: relative;
+                    padding-right: 60px !important;
+                }
+                .edit-btn {
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: none;
+                    border: none;
+                    color: #409eff;
+                    cursor: pointer;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+                .remark-cell:hover .edit-btn {
+                    opacity: 1;
+                }
+                .remark-edit-input {
+                    width: calc(100% - 120px);
+                    padding: 4px 8px;
+                    border: 1px solid #dcdfe6;
+                    border-radius: 4px;
+                    margin-right: 8px;
+                }
+                .process-select {
+                    padding: 4px 8px;
+                    border: 1px solid #dcdfe6;
+                    border-radius: 4px;
+                    background-color: white;
+                    cursor: pointer;
+                }
+                .save-btn, .cancel-btn {
+                    padding: 4px 8px;
+                    font-size: 12px;
+                    margin-left: 4px;
+                }
+                .save-btn {
+                    background-color: #409eff;
+                    border: 1px solid #409eff;
+                    color: white;
+                }
+                .cancel-btn {
+                    background-color: #fff;
+                    border: 1px solid #dcdfe6;
+                    color: #606266;
+                }
+                .batch-actions {
+                    background-color: #f8f9fa;
+                    padding: 12px 16px;
+                    border-radius: 4px;
+                    margin-bottom: 16px;
+                }
+                .batch-controls {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+                .batch-input {
+                    min-width: 200px;
+                }
+                .data-checkbox {
+                    margin-right: 8px;
+                    cursor: pointer;
+                }
+                #selectAllCheckbox {
+                    margin-right: 8px;
+                    cursor: pointer;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    </script>
+</body>
+</html>

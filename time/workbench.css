@@ -1,0 +1,252 @@
+/* 全局样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  background-color: #f5f7fa;
+  font-family: "Inter", system-ui, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+  width: 240px;
+  background-color: #fff;
+  border-right: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(0,0,0,0.02);
+  z-index: 10;
+}
+.sidebar-user {
+  padding: 24px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  border: 2px solid #165dff33;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+.user-avatar:hover {
+  transform: scale(1.05);
+}
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.user-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d2129;
+  margin-bottom: 4px;
+}
+.user-role {
+  font-size: 12px;
+  color: #86909c;
+}
+.sidebar-menu {
+  flex: 1;
+  padding: 16px 0;
+  overflow-y: auto;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  color: #4e5969;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.menu-item:hover, .menu-item.active {
+  background-color: #165dff10;
+  color: #165dff;
+}
+.menu-item.active {
+  border-left: 3px solid #165dff;
+}
+.menu-icon {
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+/* 主内容区样式 */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.top-bar {
+  height: 60px;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  justify-content: space-between;
+  display: none;
+}
+.hamburger-btn {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  color: #1d2129;
+  cursor: pointer;
+}
+.user-info-small {
+  cursor: pointer;
+}
+.workbench-container {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+.workbench-header {
+  margin-bottom: 24px;
+}
+.workbench-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d2129;
+}
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* 项目卡片样式 - 放大版本 */
+.project-card, .create-project-card {
+  transition: all 0.3s ease;
+  height: auto; /* 允许高度自适应 */
+  min-height: 220px; /* 略微减少最小高度 */
+  display: flex;
+  flex-direction: column;
+  padding: 18px; /* 略微减少内边距 */
+}
+.project-card:hover, .create-project-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+.create-project-card {
+  border: 2px dashed #eee;
+  background-color: #fafbff;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px; /* 增加创建卡片的内边距 */
+  cursor: pointer;
+  min-height: 300px; /* 增加最小高度 */
+}
+.create-icon {
+  width: 64px; /* 放大图标容器 */
+  height: 64px;
+  border-radius: 50%;
+  background-color: #165dff10;
+  color: #165dff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px; /* 放大图标 */
+  margin-bottom: 16px;
+}
+.create-text {
+  font-size: 18px; /* 放大文字 */
+  font-weight: 500;
+  color: #165dff;
+  margin-bottom: 8px;
+}
+.create-desc {
+  font-size: 14px; /* 放大描述文字 */
+  color: #86909c;
+  text-align: center;
+}
+.card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.project-name {
+  font-size: 18px; /* 放大项目名称 */
+  font-weight: 500;
+  color: #165dff;
+  max-width: 100%; /* 允许更长的名称显示空间 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.project-meta {
+  font-size: 14px;
+  color: #86909c;
+  margin-bottom: 4px; /* 每行间距更小 */
+  display: block; /* 每行独占 */
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.project-desc {
+  font-size: 15px; /* 放大描述文字 */
+  color: #4e5969;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* 增加可显示行数 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+}
+.empty-state {
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* 响应式适配 */
+@media (max-width: 992px) {
+  .sidebar {
+    position: fixed;
+    left: -240px;
+    height: 100vh;
+  }
+  .sidebar.show {
+    left: 0;
+  }
+  .top-bar {
+    display: flex;
+  }
+  .workbench-container {
+    padding: 16px;
+  }
+  .create-project-card {
+    padding: 24px;
+  }
+}

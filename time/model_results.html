@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模型结果 - 模型管理</title>
+  <!-- 依赖引入 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/element-plus@2.3.9/dist/index.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <!-- 引入SheetJS用于Excel导出 -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- 引入外部CSS -->
+  <link href="./workbench.css" rel="stylesheet">
+  
+  <style>
+      /* 页面特有样式 */
+      .results-container {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      
+      .results-header {
+        margin-bottom: 32px;
+      }
+      
+      .results-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1d2129;
+        margin-bottom: 12px;
+      }
+      
+      .project-info {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+      
+      .info-item {
+        display: flex;
+        align-items: center;
+      }
+      
+      .info-label {
+        color: #666;
+        margin-right: 8px;
+        font-size: 14px;
+      }
+      
+      .info-value {
+        font-weight: 500;
+        color: #333;
+      }
+      
+      .results-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      
+      .section-card {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      }
+      
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .section-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #1d2129;
+        display: flex;
+        align-items: center;
+      }
+      
+      .section-title i {
+        margin-right: 8px;
+        color: #165dff;
+      }
+      
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+      
+      .metric-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #e9ecef;
+      }
+      
+      .metric-name {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+      }
+      
+      .metric-value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #165dff;
+      }
+      
+      .metric-desc {
+        font-size: 12px;
+        color: #999;
+        margin-top: 4px;
+      }
+      
+      .chart-container {
+        height: 400px;
+        margin-bottom: 20px;
+      }
+      
+      .chart-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 20px;
+        align-items: center;
+      }
+      
+      .chart-actions {
+        display: flex;
+        gap: 12px;
+        margin-left: auto;
+      }
+      
+      .export-buttons {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .table-container {
+        overflow-x: auto;
+        margin-bottom: 20px;
+      }
+      
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      .data-table th,
+      .data-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid #ebeef5;
+      }
+      
+      .data-table th {
+        background-color: #fafafa;
+        font-weight: 500;
+        color: #909399;
+        font-size: 13px;
+      }
+      
+      .data-table tr:hover {
+        background-color: #f5f7fa;
+      }
+      
+      .summary-section {
+        background-color: #f0f7ff;
+        border: 1px solid #d9ecff;
+        border-radius: 8px;
+        padding: 20px;
+      }
+      
+      .summary-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #165dff;
+        margin-bottom: 12px;
+      }
+      
+      .summary-content {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #4e5969;
+      }
+      
+      .highlight {
+        background-color: #fff3cd;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+      
+      .success {
+        color: #67c23a;
+      }
+      
+      .warning {
+        color: #e6a23c;
+      }
+      
+      .danger {
+        color: #f56c6c;
+      }
+      
+      /* 响应式设计 */
+      @media (max-width: 768px) {
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .section-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+        }
+        
+        .chart-controls {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
+        .chart-actions {
+          margin-left: 0;
+          width: 100%;
+          justify-content: space-between;
+        }
+        
+        .project-info {
+          flex-direction: column;
+          gap: 12px;
+        }
+      }
+  </style>
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- 侧边栏 - 使用workbench.css中定义的样式 -->
+    <aside class="sidebar">
+      <!-- 用户信息区域 -->
+      <div class="sidebar-user" onclick="goToProfile()">
+        <div class="user-avatar">
+          <img id="avatar" src="https://picsum.photos/id/1005/200/200" alt="用户头像">
+        </div>
+        <div class="user-name">张三</div>
+        <div class="user-role">普通用户</div>
+      </div>
+      
+      <!-- 菜单列表 -->
+      <div class="sidebar-menu">
+        <div class="menu-item" onclick="switchMenu('workbench')">
+          <i class="fa fa-tachometer menu-icon"></i>
+          <span>工作台</span>
+        </div>
+        <div class="menu-item" onclick="switchMenu('data')">
+          <i class="fa fa-database menu-icon"></i>
+          <span>数据管理</span>
+        </div>
+        <div class="menu-item active" onclick="switchMenu('model')">
+          <i class="fa fa-cogs menu-icon"></i>
+          <span>模型管理</span>
+        </div>
+        <div class="menu-item" onclick="switchMenu('profile')">
+          <i class="fa fa-user menu-icon"></i>
+          <span>个人信息</span>
+        </div>
+        <div class="menu-item" onclick="handleLogout()">
+          <i class="fa fa-sign-out menu-icon"></i>
+          <span>退出登录</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <div class="top-bar">
+        <button class="hamburger-btn" onclick="toggleSidebar()">
+          <i class="fa fa-bars"></i>
+        </button>
+        <div class="user-info-small" onclick="goToProfile">
+          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="头像">
+        </div>
+      </div>
+
+      <div class="results-container">
+        <div class="results-header">
+          <div class="results-title">
+            <i class="fa fa-line-chart mr-2"></i>模型结果
+          </div>
+          <p class="text-gray-500">以下是模型训练和预测的详细结果分析</p>
+        </div>
+
+        <!-- 项目信息 -->
+        <div class="project-info">
+          <div class="info-item">
+            <span class="info-label">项目名称:</span>
+            <span class="info-value">{{ projectInfo.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">使用模型:</span>
+            <span class="info-value">{{ projectInfo.model }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">训练时间:</span>
+            <span class="info-value">{{ projectInfo.trainingTime }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">数据量:</span>
+            <span class="info-value">{{ projectInfo.dataSize }}</span>
+          </div>
+        </div>
+
+        <!-- 评估指标卡片 -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fa fa-bar-chart"></i>模型评估指标
+            </h3>
+            <div class="export-buttons">
+              <el-button type="primary" size="small" @click="exportData('csv')">
+                <i class="fa fa-file-text-o mr-1"></i>导出CSV
+              </el-button>
+              <el-button type="primary" size="small" @click="exportData('excel')">
+                <i class="fa fa-file-excel-o mr-1"></i>导出Excel
+              </el-button>
+            </div>
+          </div>
+          
+          <div class="metrics-grid">
+            <div class="metric-card" v-for="metric in metrics" :key="metric.key">
+              <div class="metric-name">{{ metric.name }}</div>
+              <div class="metric-value">{{ metric.value }}</div>
+              <div class="metric-desc">{{ metric.description }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 预测结果可视化 -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fa fa-line-chart"></i>预测结果可视化
+            </h3>
+            <div class="chart-controls">
+              <span class="text-gray-500">选择指标:</span>
+              <el-radio-group v-model="selectedMetric" size="small" @change="updateChart">
+                <el-radio-button label="mse">MSE</el-radio-button>
+                <el-radio-button label="mae">MAE</el-radio-button>
+                <el-radio-button label="rmse">RMSE</el-radio-button>
+                <el-radio-button label="mape">MAPE</el-radio-button>
+                <el-radio-button label="r2">R²</el-radio-button>
+              </el-radio-group>
+              <div class="chart-actions">
+                <el-button type="default" size="small" @click="showActualData = !showActualData">
+                  {{ showActualData ? '隐藏实际值' : '显示实际值' }}
+                </el-button>
+                <el-button type="default" size="small" @click="downloadChart">
+                  <i class="fa fa-download mr-1"></i>下载图表
+                </el-button>
+              </div>
+            </div>
+          </div>
+          
+          <div id="predictionChart" class="chart-container"></div>
+        </div>
+
+        <!-- 误差分析 -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fa fa-pie-chart"></i>误差分布分析
+            </h3>
+          </div>
+          
+          <div id="errorChart" class="chart-container"></div>
+        </div>
+
+        <!-- 预测数据表格 -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fa fa-table"></i>预测数据详情
+            </h3>
+            <div class="export-buttons">
+              <el-button type="primary" size="small" @click="exportDetailedData('csv')">
+                <i class="fa fa-file-text-o mr-1"></i>导出CSV
+              </el-button>
+              <el-button type="primary" size="small" @click="exportDetailedData('excel')">
+                <i class="fa fa-file-excel-o mr-1"></i>导出Excel
+              </el-button>
+            </div>
+          </div>
+          
+          <div class="table-container">
+            <el-table :data="predictionData" style="width: 100%">
+              <el-table-column prop="date" label="日期" width="120"></el-table-column>
+              <el-table-column prop="actual" label="实际值" width="120" align="right">
+                <template #default="scope">
+                  {{ formatNumber(scope.row.actual) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="predicted" label="预测值" width="120" align="right" class-name="predicted-value">
+                <template #default="scope">
+                  {{ formatNumber(scope.row.predicted) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="error" label="误差" width="120" align="right">
+                <template #default="scope">
+                  <span :class="getErrorClass(scope.row.error)">
+                    {{ formatNumber(scope.row.error) }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="percentageError" label="误差百分比" width="140" align="right">
+                <template #default="scope">
+                  <span :class="getErrorClass(scope.row.error)">
+                    {{ formatPercentage(scope.row.percentageError) }}
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
+
+        <!-- 模型总结 -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fa fa-file-text"></i>模型总结
+            </h3>
+          </div>
+          
+          <div class="summary-section">
+            <div class="summary-title">模型性能评估</div>
+            <div class="summary-content">
+              <p>1. 模型 <span class="highlight">{{ projectInfo.model }}</span> 在当前数据集上表现<span class="success">优秀</span>。</p>
+              <p>2. <span class="highlight">MSE 值为 {{ getMetricValue('mse') }}</span>，表明模型预测误差较小，拟合效果良好。</p>
+              <p>3. <span class="highlight">R² 分数为 {{ getMetricValue('r2') }}</span>，说明模型能够解释大部分数据变异。</p>
+              <p>4. 从误差分布来看，<span class="highlight">{{ getErrorDistributionSummary() }}</span>，模型稳定性良好。</p>
+              <p>5. 建议：可以考虑进一步调整超参数或尝试集成学习方法来提升模型性能。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Vue应用实例
+    const { createApp, ref, onMounted, computed } = Vue;
+    
+    const app = createApp({
+      setup() {
+        // 项目信息
+        const projectInfo = ref({
+          name: '销售预测项目',
+          model: 'PatchTST',
+          trainingTime: '2024-01-15 14:30:25 - 14:45:38',
+          dataSize: '2000 条记录'
+        });
+        
+        // 评估指标
+        const metrics = ref([
+          { key: 'mse', name: '均方误差 (MSE)', value: '0.0024', description: '预测值与实际值差值的平方和的平均值' },
+          { key: 'rmse', name: '均方根误差 (RMSE)', value: '0.0490', description: 'MSE的平方根，与原始数据同量级' },
+          { key: 'mae', name: '平均绝对误差 (MAE)', value: '0.0372', description: '预测值与实际值绝对差的平均值' },
+          { key: 'mape', name: '平均绝对百分比误差 (MAPE)', value: '1.25%', description: '绝对百分比误差的平均值' },
+          { key: 'r2', name: '决定系数 (R²)', value: '0.9876', description: '模型解释数据变异的能力' },
+          { key: 'sse', name: '误差平方和 (SSE)', value: '4.8000', description: '所有预测误差的平方和' }
+        ]);
+        
+        // 图表相关状态
+        const selectedMetric = ref('mse');
+        const showActualData = ref(true);
+        
+        // 生成模拟预测数据
+        const generatePredictionData = () => {
+          const data = [];
+          const startDate = new Date('2024-01-01');
+          
+          for (let i = 0; i < 30; i++) {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + i);
+            
+            // 生成模拟实际值（正弦波加噪声）
+            const baseValue = 100 + 50 * Math.sin(i / 5) + Math.random() * 10;
+            // 生成模拟预测值（实际值加随机误差）
+            const error = (Math.random() - 0.5) * 5;
+            const predictedValue = baseValue + error;
+            const percentageError = (error / baseValue) * 100;
+            
+            data.push({
+              date: date.toISOString().split('T')[0],
+              actual: baseValue,
+              predicted: predictedValue,
+              error: error,
+              percentageError: percentageError
+            });
+          }
+          
+          return data;
+        };
+        
+        // 预测数据
+        const predictionData = ref(generatePredictionData());
+        
+        // 格式化数字
+        const formatNumber = (value) => {
+          return value.toFixed(2);
+        };
+        
+        // 格式化百分比
+        const formatPercentage = (value) => {
+          return value.toFixed(2) + '%';
+        };
+        
+        // 获取误差样式类
+        const getErrorClass = (error) => {
+          const absError = Math.abs(error);
+          if (absError < 1) return 'success';
+          if (absError < 3) return 'warning';
+          return 'danger';
+        };
+        
+        // 获取指标值
+        const getMetricValue = (key) => {
+          const metric = metrics.value.find(m => m.key === key);
+          return metric ? metric.value : '-';
+        };
+        
+        // 获取误差分布总结
+        const getErrorDistributionSummary = () => {
+          const errors = predictionData.value.map(d => Math.abs(d.error));
+          const smallErrors = errors.filter(e => e < 1).length;
+          const mediumErrors = errors.filter(e => e >= 1 && e < 3).length;
+          const largeErrors = errors.filter(e => e >= 3).length;
+          
+          const total = errors.length;
+          const smallPercent = Math.round((smallErrors / total) * 100);
+          
+          return `${smallPercent}% 的预测误差在1以内`;
+        };
+        
+        // 绘制预测结果图表
+        let predictionChart = null;
+        const drawPredictionChart = () => {
+          const chartDom = document.getElementById('predictionChart');
+          predictionChart = echarts.init(chartDom);
+          
+          const dates = predictionData.value.map(d => d.date);
+          const actualValues = predictionData.value.map(d => d.actual);
+          const predictedValues = predictionData.value.map(d => d.predicted);
+          
+          const option = {
+            tooltip: {
+              trigger: 'axis',
+              axisPointer: {
+                type: 'cross',
+                label: {
+                  backgroundColor: '#6a7985'
+                }
+              }
+            },
+            legend: {
+              data: ['实际值', '预测值']
+            },
+            grid: {
+              left: '3%',
+              right: '4%',
+              bottom: '3%',
+              containLabel: true
+            },
+            xAxis: {
+              type: 'category',
+              boundaryGap: false,
+              data: dates,
+              axisLabel: {
+                rotate: 45,
+                interval: 2
+              }
+            },
+            yAxis: {
+              type: 'value'
+            },
+            series: [
+              {
+                name: '实际值',
+                type: 'line',
+                data: actualValues,
+                itemStyle: {
+                  color: '#67c23a'
+                },
+                showSymbol: false,
+                emphasis: {
+                  focus: 'series'
+                },
+                lineStyle: {
+                  width: 2
+                }
+              },
+              {
+                name: '预测值',
+                type: 'line',
+                data: predictedValues,
+                itemStyle: {
+                  color: '#165dff'
+                },
+                showSymbol: false,
+                emphasis: {
+                  focus: 'series'
+                },
+                lineStyle: {
+                  width: 2,
+                  type: 'dashed'
+                }
+              }
+            ]
+          };
+          
+          predictionChart.setOption(option);
+          
+          // 响应式调整
+          window.addEventListener('resize', () => {
+            predictionChart.resize();
+          });
+        };
+        
+        // 绘制误差分布图表
+        const drawErrorChart = () => {
+          const chartDom = document.getElementById('errorChart');
+          const errorChart = echarts.init(chartDom);
+          
+          // 计算误差分布
+          const errors = predictionData.value.map(d => Math.abs(d.error));
+          const distribution = [
+            { name: '误差 < 1', value: errors.filter(e => e < 1).length },
+            { name: '1 ≤ 误差 < 2', value: errors.filter(e => e >= 1 && e < 2).length },
+            { name: '2 ≤ 误差 < 3', value: errors.filter(e => e >= 2 && e < 3).length },
+            { name: '3 ≤ 误差 < 4', value: errors.filter(e => e >= 3 && e < 4).length },
+            { name: '误差 ≥ 4', value: errors.filter(e => e >= 4).length }
+          ];
+          
+          const option = {
+            tooltip: {
+              trigger: 'item'
+            },
+            legend: {
+              orient: 'vertical',
+              left: 'left'
+            },
+            series: [
+              {
+                name: '误差分布',
+                type: 'pie',
+                radius: '50%',
+                data: distribution,
+                emphasis: {
+                  itemStyle: {
+                    shadowBlur: 10,
+                    shadowOffsetX: 0,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                  }
+                },
+                label: {
+                  formatter: '{b}: {c} ({d}%)'
+                }
+              }
+            ]
+          };
+          
+          errorChart.setOption(option);
+          
+          // 响应式调整
+          window.addEventListener('resize', () => {
+            errorChart.resize();
+          });
+        };
+        
+        // 更新图表
+        const updateChart = () => {
+          // 根据选择的指标更新图表（此处简化处理，实际应用中可能需要重新计算数据）
+          ElementPlus.ElMessage.info(`已切换到 ${getMetricName(selectedMetric.value)} 指标`);
+        };
+        
+        // 获取指标名称
+        const getMetricName = (key) => {
+          const metric = metrics.value.find(m => m.key === key);
+          return metric ? metric.name : key.toUpperCase();
+        };
+        
+        // 下载图表
+        const downloadChart = () => {
+          if (predictionChart) {
+            const url = predictionChart.getDataURL({
+              type: 'png',
+              pixelRatio: 2,
+              backgroundColor: '#fff'
+            });
+            
+            const link = document.createElement('a');
+            link.download = `预测结果图表_${selectedMetric.value}.png`;
+            link.href = url;
+            link.click();
+            
+            ElementPlus.ElMessage.success('图表下载成功');
+          }
+        };
+        
+        // 导出数据
+        const exportData = (format) => {
+          const exportData = metrics.value.map(m => ({
+            '指标名称': m.name,
+            '指标值': m.value,
+            '说明': m.description
+          }));
+          
+          if (format === 'csv') {
+            exportToCSV(exportData, '模型评估指标.csv');
+          } else {
+            exportToExcel(exportData, '模型评估指标', '模型评估指标.xlsx');
+          }
+        };
+        
+        // 导出详细数据
+        const exportDetailedData = (format) => {
+          const exportData = predictionData.value.map(d => ({
+            '日期': d.date,
+            '实际值': d.actual.toFixed(2),
+            '预测值': d.predicted.toFixed(2),
+            '误差': d.error.toFixed(2),
+            '误差百分比': d.percentageError.toFixed(2) + '%'
+          }));
+          
+          if (format === 'csv') {
+            exportToCSV(exportData, '预测详细数据.csv');
+          } else {
+            exportToExcel(exportData, '预测详细数据', '预测详细数据.xlsx');
+          }
+        };
+        
+        // 导出为CSV
+        const exportToCSV = (data, filename) => {
+          const headers = Object.keys(data[0]);
+          const csvContent = [
+            headers.join(','),
+            ...data.map(row => headers.map(header => {
+              const cell = row[header] || '';
+              return `"${cell.toString().replace(/"/g, '""')}"`;
+            }).join(','))
+          ].join('\n');
+          
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = filename;
+          link.click();
+          
+          ElementPlus.ElMessage.success(`CSV文件 ${filename} 导出成功`);
+        };
+        
+        // 导出为Excel
+        const exportToExcel = (data, sheetName, filename) => {
+          const ws = XLSX.utils.json_to_sheet(data);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+          XLSX.writeFile(wb, filename);
+          
+          ElementPlus.ElMessage.success(`Excel文件 ${filename} 导出成功`);
+        };
+        
+        // 组件挂载时执行
+        onMounted(() => {
+          drawPredictionChart();
+          drawErrorChart();
+        });
+        
+        return {
+          projectInfo,
+          metrics,
+          selectedMetric,
+          showActualData,
+          predictionData,
+          formatNumber,
+          formatPercentage,
+          getErrorClass,
+          getMetricValue,
+          getErrorDistributionSummary,
+          updateChart,
+          downloadChart,
+          exportData,
+          exportDetailedData
+        };
+      }
+    });
+    
+    // 使用 Element Plus
+    app.use(ElementPlus);
+    
+    // 挂载应用
+    app.mount('#app');
+  </script>
+
+  <script>
+    // 侧边栏交互功能
+    function toggleSidebar() {
+      document.querySelector('.sidebar').classList.toggle('show');
+    }
+
+    function switchMenu(menuName) {
+      // 更新菜单项激活状态
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.target.closest('.menu-item')?.classList.add('active');
+      
+      // 页面跳转
+      const urls = {
+        workbench: 'index.html',
+        data: 'data_gover.html',
+        model: 'model_gover.html',
+        profile: 'profile.html'
+      };
+      if (urls[menuName]) {
+        window.location.href = urls[menuName];
+      }
+    }
+
+    function goToProfile() {
+      window.location.href = 'profile.html';
+    }
+
+    function handleLogout() {
+      if (confirm('确定要退出登录吗？')) {
+        alert('已退出登录');
+      }
+    }
+  </script>
+</body>
+</html>
